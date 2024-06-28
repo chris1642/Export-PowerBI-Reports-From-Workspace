@@ -1,0 +1,58 @@
+# Define the base folder and script paths at the beginning of the script
+$baseFolderPath = "C:\Power BI Backups"
+
+# Define workspace ID from desired Power BI Workspace
+$workspaceid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+# Check and set the execution policy
+$currentPolicy = Get-ExecutionPolicy -Scope CurrentUser
+if ($currentPolicy -eq 'Restricted' -or $currentPolicy -eq 'Undefined' -or $currentPolicy -eq 'AllSigned') {
+    Write-Host "Current execution policy is restrictive: $currentPolicy. Attempting to set to RemoteSigned."
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+    Write-Host "Execution policy set to RemoteSigned."
+} else {
+    Write-Host "Current execution policy is sufficient: $currentPolicy."
+}
+
+# Check and install the necessary modules
+$requiredModules = @('MicrosoftPowerBIMgmt', 'ImportExcel')
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -ListAvailable -Name $module)) {
+        Install-Module -Name $module -Scope CurrentUser -Force
+    }
+}
+
+Import-Module ImportExcel
+Import-Module MicrosoftPowerBIMgmt
+
+# Login to Power BI
+Login-PowerBI
+
+$reports = Get-PowerBIReport -WorkspaceId $workspaceid
+
+# Define the report backups path
+$reportBackupsPath = Join-Path -Path $baseFolderPath -ChildPath "Report Backups"
+
+# Check if the "Report Backups" folder exists, if not create it
+if (-not (Test-Path -Path $reportBackupsPath)) {
+    New-Item -Path $reportBackupsPath -ItemType Directory
+}
+
+# Create a variable for end of week (Friday) date
+$date = (Get-Date -UFormat "%Y-%m-%d")
+
+# Create a new folder for the backups
+$new_date_folder = Join-Path -Path $reportBackupsPath -ChildPath $date
+New-Item -Path $new_date_folder -ItemType Directory -Force
+
+# Export each report in the workspace
+foreach ($report in $reports) {
+    $filename = $report.Name -replace "[^a-zA-Z0-9]", " " # Clean up the file name
+    $filename = $filename.TrimStart() # Remove leading spaces if any
+    $filename = "$filename.pbix"
+    $filepath = Join-Path -Path $new_date_folder -ChildPath $filename
+    Export-PowerBIReport -Id $report.Id -OutFile $filepath
+}
+
+Write-Output "Reports exported to $new_date_folder"
+ 
