@@ -1,5 +1,5 @@
 # Define workspace ID from desired Power BI Workspace
-$workspaceid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX"
+$workspaceid = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 
 # Define the base folder and script paths at the beginning of the script
 $baseFolderPath = "C:\Power BI Backups"
@@ -25,11 +25,6 @@ foreach ($module in $requiredModules) {
 Import-Module ImportExcel
 Import-Module MicrosoftPowerBIMgmt
 
-# Check if the base folder exists, if not create it
-if (-not (Test-Path -Path $baseFolderPath)) {
-    New-Item -Path $baseFolderPath -ItemType Directory -Force
-}
-
 # Login to Power BI
 Login-PowerBI
 
@@ -52,17 +47,13 @@ New-Item -Path $new_date_folder -ItemType Directory -Force
 
 # Export each report in the workspace
 foreach ($report in $reports) {
-    $filename = $report.Name -replace "[^a-zA-Z0-9\(\)&-]", " " # Clean up the file name
-    $filename = $filename.TrimStart() # Remove leading spaces if any
-    $filename = "$filename.pbix"
-    $filepath = Join-Path -Path $new_date_folder -ChildPath $filename
-	# Check if the file exists and remove it if it does
-        if (Test-Path $filepath) {
-            Remove-Item $filepath -Force
-        }
-Write-Output "Exporting $filename"
-
-    Export-PowerBIReport -Id $report.Id -OutFile $filepath
+    # Clean up report name
+	$filename = $report.Name -replace '\[', '(' -replace '\]', ')'
+        $filename = $filename -replace "[^a-zA-Z0-9\(\)&-]", " "
+	$filename = $filename.TrimStart()
+	$filename = "$filename.pbix"
+	$filepath = Join-Path -Path $new_date_folder -ChildPath $filename
+	Export-PowerBIReport -Id $report.Id -OutFile $filepath
 }
 
 Write-Output "Reports exported to $new_date_folder"
