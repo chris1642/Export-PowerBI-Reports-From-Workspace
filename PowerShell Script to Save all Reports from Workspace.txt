@@ -21,22 +21,8 @@ foreach ($module in $requiredModules) {
        Install-Module -Name $module -Scope CurrentUser -Force
     }
 
-    Import-Module $Module -ErrorAction 'stop' # In the rare case Install-Module fails, you probably want a terminating error ( ex: -ErrorAction or a throw )
+    Import-Module $Module -ErrorAction 'stop' # In the rare case Install-Module fails, you probably want a terminating error
 }
-
-<#
-    "Get-Module -ListAvailable" is slow because it has extra work. If there's a lot of modules or cloud storage, it can take a long time.
-    We can use a faster option when the goal is: "is this module importable/installed" ?
-
-    Test for a truthy -PassThru:
-
-        Import-Module -PassThru -Ea Ignore
-
-    That always returns a non-empty result.
-    Both for the first import statement, and imports on already-loaded modules
-
-    Else empty when it isn't installed.
-#>
 
 # Login to Power BI
 Login-PowerBI
